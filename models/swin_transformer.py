@@ -232,7 +232,7 @@ class SwinTransformerBlock(Layer):
                     cnt += 1
             img_mask = tf.constant(img_mask)
             mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
-            mask_windows = mask_windows.view(-1, self.window_size * self.window_size)
+            mask_windows = tf.reshape(mask_windows, [-1, self.window_size * self.window_size])
             attn_mask = mask_windows[:, None, :] - mask_windows[:, :, None]
             self.attn_mask = tf.where(attn_mask==0, -100, 0)
         else:
@@ -293,4 +293,52 @@ class SwinTransformerBlock(Layer):
         flops += 2 * H * W * self.dim * self.dim * self.mlp_ratio
         # norm2
         flops += self.dim * H * W
+        return flops
+
+
+class PatchMerging(Layer):
+    r""" Patch Merging Layer.
+    Args:
+        input_resolution (tuple[int]): Resolution of input feature.
+        dim (int): Number of input channels.
+        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+    """
+
+    def __init__(self, input_resolution, dim, norm_layer=LayerNormalization):
+        super().__init__()
+        self.input_resolution = input_resolution
+        self.dim = dim
+        self.reduction = Dense(4 * dim, 2 * dim, bias=False)
+        self.norm = norm_layer()
+
+    def call(self, x):
+        """
+        x: B, H*W, C
+        """
+        H, W = self.input_resolution
+        B, L, C = x.shape
+        assert L == H * W, "input feature has wrong size"
+        assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
+
+        x = tf.reshape(x, [B, H, W, C])
+
+        x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
+        x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
+        x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
+        x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
+        x = tf.concat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
+        x = tf.reshape(x, [B, -1, 4 * C])  # B H/2*W/2 4*C
+
+        x = self.norm(x)
+        x = self.reduction(x)
+
+        return x
+
+    def extra_repr(self) -> str:
+        return f"input_resolution={self.input_resolution}, dim={self.dim}"
+
+    def flops(self):
+        H, W = self.input_resolution
+        flops = H * W * self.dim # merging
+        flops += (H // 2) * (W // 2) * 4 * self.dim * 2 * self.dim # reduction
         return flops
