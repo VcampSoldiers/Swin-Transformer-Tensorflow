@@ -4,9 +4,13 @@ from tensorflow.keras.layers import (
     Dense,
     Dropout,
     Softmax,
-    LayerNormalization
+    LayerNormalization,
+    Conv2D,
+    Layer
 )
-from tensorflow.keras import Model, Layer, Sequential
+from tensorflow.keras import Model, Sequential
+
+import tensorflow_addons as tfa
 
 from models.utils import *
 
@@ -16,34 +20,20 @@ class Mlp(Layer):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
-        self.fc1 = Dense(hidden_features)
-        self.act = act_layer()
-        self.fc2 = Dense(out_features)
+        self.fc1 = TruncatedDense(hidden_features)
+        self.act = act_layer
+        self.fc2 = TruncatedDense(out_features)
         self.drop = Dropout(drop)
 
     def call(self, x):
-        assert x.shape[-1] == self.in_features
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
         x = self.fc2(x)
         x = self.drop(x)
         return x
+        
 
-
-class DropPath(Layer):
-    def __init__(self, prob):
-        super().__init__()
-        self.prob = prob
-
-    def call(self, x):
-        if tf.random.uniform(shape=()) < self.prob:
-            return tf.zeros(x.shape)
-        else:
-            return x
-
-
-@tf.function
 def window_partition(x, window_size):
     """
     Args:
@@ -115,9 +105,9 @@ class WindowAttention(Layer):
         relative_coords = relative_coords * [2*self.window_size[1] - 1, 1]
         self.relative_position_index = tf.math.reduce_sum(relative_coords,-1)  # Wh*Ww, Wh*Ww
 
-        self.qkv = Dense(dim * 3, bias=qkv_bias)
+        self.qkv = TruncatedDense(dim * 3, use_bias=qkv_bias)
         self.attn_drop = Dropout(attn_drop)
-        self.proj = Dense(dim, dim)
+        self.proj = TruncatedDense(dim)
         self.proj_drop = Dropout(proj_drop)
         self.softmax = Softmax(axis=-1)
 
@@ -134,7 +124,7 @@ class WindowAttention(Layer):
         q = q * self.scale
         attn = tf.einsum('...ij,...kj->...ik', q, k)
 
-        relative_position_bias = tf.reshape(self.relative_position_bias_table[tf.reshape(self.relative_position_index, -1)],
+        relative_position_bias = tf.reshape(tf.gather(tf.reshape(self.relative_position_bias_table, [-1, self.num_heads]), tf.reshape(self.relative_position_index, -1)),
             [self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1])  # Wh*Ww,Wh*Ww,nH
         relative_position_bias = tf.transpose(relative_position_bias, perm=[2, 0, 1])  # nH, Wh*Ww, Wh*Ww
         attn = attn + relative_position_bias
@@ -210,7 +200,7 @@ class SwinTransformerBlock(Layer):
             dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
             qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else tf.identity() #TODO: implement DropPath?
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else tf.identity #TODO: implement DropPath?
         self.norm2 = norm_layer()
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
@@ -234,7 +224,7 @@ class SwinTransformerBlock(Layer):
             mask_windows = window_partition(img_mask, self.window_size)  # nW, window_size, window_size, 1
             mask_windows = tf.reshape(mask_windows, [-1, self.window_size * self.window_size])
             attn_mask = mask_windows[:, None, :] - mask_windows[:, :, None]
-            self.attn_mask = tf.where(attn_mask==0, -100, 0)
+            self.attn_mask = tf.where(attn_mask==0, -100., 0.)
         else:
             self.attn_mask = None
 
@@ -308,7 +298,7 @@ class PatchMerging(Layer):
         super().__init__()
         self.input_resolution = input_resolution
         self.dim = dim
-        self.reduction = Dense(4 * dim, 2 * dim, bias=False)
+        self.reduction = TruncatedDense(2 * dim, use_bias=False)
         self.norm = norm_layer()
 
     def call(self, x):
@@ -341,4 +331,223 @@ class PatchMerging(Layer):
         H, W = self.input_resolution
         flops = H * W * self.dim # merging
         flops += (H // 2) * (W // 2) * 4 * self.dim * 2 * self.dim # reduction
+        return flops
+
+
+class BasicLayer(Layer):
+    """ A basic Swin Transformer layer for one stage.
+    Args:
+        dim (int): Number of input channels.
+        input_resolution (tuple[int]): Input resolution.
+        depth (int): Number of blocks.
+        num_heads (int): Number of attention heads.
+        window_size (int): Local window size.
+        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim.
+        qkv_bias (bool, optional): If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set.
+        drop (float, optional): Dropout rate. Default: 0.0
+        attn_drop (float, optional): Attention dropout rate. Default: 0.0
+        drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
+        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
+        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
+        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False.
+    """
+
+    def __init__(self, dim, input_resolution, depth, num_heads, window_size,
+                 mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., norm_layer=LayerNormalization, downsample=None):
+
+        super().__init__()
+        self.dim = dim
+        self.input_resolution = input_resolution
+        self.depth = depth
+
+        # build blocks
+        self.blocks = [
+            SwinTransformerBlock(dim=dim, input_resolution=input_resolution,
+                                 num_heads=num_heads, window_size=window_size,
+                                 shift_size=0 if (i % 2 == 0) else window_size // 2,
+                                 mlp_ratio=mlp_ratio,
+                                 qkv_bias=qkv_bias, qk_scale=qk_scale,
+                                 drop=drop, attn_drop=attn_drop,
+                                 drop_path=drop_path[i] if isinstance(drop_path, list) else drop_path,
+                                 norm_layer=norm_layer)
+            for i in range(depth)]
+
+        # patch merging layer
+        if downsample is not None:
+            self.downsample = downsample(input_resolution, dim=dim, norm_layer=norm_layer)
+        else:
+            self.downsample = None
+
+    def call(self, x):
+        for blk in self.blocks:
+            x = blk(x)
+        if self.downsample is not None:
+            x = self.downsample(x)
+        return x
+
+    def extra_repr(self) -> str:
+        return f"dim={self.dim}, input_resolution={self.input_resolution}, depth={self.depth}"
+
+    def flops(self):
+        flops = 0
+        for blk in self.blocks:
+            flops += blk.flops()
+        if self.downsample is not None:
+            flops += self.downsample.flops()
+        return flops
+
+
+class PatchEmbed(Layer):
+    r""" Image to Patch Embedding
+    Args:
+        img_size (int): Image size.  Default: 224.
+        patch_size (int): Patch token size. Default: 4.
+        in_chans (int): Number of input image channels. Default: 3.
+        embed_dim (int): Number of linear projection output channels. Default: 96.
+        norm_layer (nn.Module, optional): Normalization layer. Default: None
+    """
+
+    def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
+        super().__init__()
+        img_size = to_2tuple(img_size)
+        patch_size = to_2tuple(patch_size)
+        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.patches_resolution = patches_resolution
+        self.num_patches = patches_resolution[0] * patches_resolution[1]
+
+        self.in_chans = in_chans
+        self.embed_dim = embed_dim
+
+        self.proj = Conv2D(filters=embed_dim, kernel_size=patch_size, strides=patch_size, data_format="channels_first")
+        if norm_layer is not None:
+            self.norm = norm_layer()
+        else:
+            self.norm = None
+
+    def call(self, x):
+        B, C, H, W = x.shape
+        # FIXME look at relaxing size constraints
+        assert H == self.img_size[0] and W == self.img_size[1], \
+            f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+        x = tf.transpose(tf.reshape(self.proj(x), [B, self.embed_dim, -1]), perm=[0, 2, 1])
+        if self.norm is not None:
+            x = self.norm(x)
+        return x
+
+    def flops(self):
+        Ho, Wo = self.patches_resolution
+        flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
+        if self.norm is not None:
+            flops += Ho * Wo * self.embed_dim
+        return flops
+
+
+class SwinTransformer(Model):
+    r""" Swin Transformer
+        A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
+          https://arxiv.org/pdf/2103.14030
+    Args:
+        img_size (int | tuple(int)): Input image size. Default 224
+        patch_size (int | tuple(int)): Patch size. Default: 4
+        in_chans (int): Number of input image channels. Default: 3
+        num_classes (int): Number of classes for classification head. Default: 1000
+        embed_dim (int): Patch embedding dimension. Default: 96
+        depths (tuple(int)): Depth of each Swin Transformer layer.
+        num_heads (tuple(int)): Number of attention heads in different layers.
+        window_size (int): Window size. Default: 7
+        mlp_ratio (float): Ratio of mlp hidden dim to embedding dim. Default: 4
+        qkv_bias (bool): If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float): Override default qk scale of head_dim ** -0.5 if set. Default: None
+        drop_rate (float): Dropout rate. Default: 0
+        attn_drop_rate (float): Attention dropout rate. Default: 0
+        drop_path_rate (float): Stochastic depth rate. Default: 0.1
+        norm_layer (nn.Module): Normalization layer. Default: nn.LayerNorm.
+        ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
+        patch_norm (bool): If True, add normalization after patch embedding. Default: True
+        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False
+    """
+
+    def __init__(self, img_size=224, patch_size=4, in_chans=3, num_classes=1000,
+                 embed_dim=96, depths=[2, 2, 6, 2], num_heads=[3, 6, 12, 24],
+                 window_size=7, mlp_ratio=4., qkv_bias=True, qk_scale=None,
+                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1,
+                 norm_layer=LayerNormalization, ape=False, patch_norm=True,
+                 **kwargs):
+        super().__init__()
+
+        self.num_classes = num_classes
+        self.num_layers = len(depths)
+        self.embed_dim = embed_dim
+        self.ape = ape
+        self.patch_norm = patch_norm
+        self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
+        self.mlp_ratio = mlp_ratio
+
+        # split image into non-overlapping patches
+        self.patch_embed = PatchEmbed(
+            img_size=img_size, patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim,
+            norm_layer=norm_layer if self.patch_norm else None)
+        num_patches = self.patch_embed.num_patches
+        patches_resolution = self.patch_embed.patches_resolution
+        self.patches_resolution = patches_resolution
+
+        # absolute position embedding
+        if self.ape:
+            initializer = tf.keras.initializers.TruncatedNormal(mean=0., stddev=.02)
+            self.absolute_pos_embed = tf.Variable(initializer(shape = (1, num_patches, embed_dim)), trainable=True)
+
+        self.pos_drop = tf.keras.layers.Dropout(rate=drop_rate)
+
+        # stochastic depth
+        dpr = [x for x in np.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
+
+        # build layers
+        self.sequence = Sequential()
+        for i_layer in range(self.num_layers):
+            self.sequence.add(BasicLayer(dim=int(embed_dim * 2 ** i_layer),
+                               input_resolution=(patches_resolution[0] // (2 ** i_layer),
+                                                 patches_resolution[1] // (2 ** i_layer)),
+                               depth=depths[i_layer],
+                               num_heads=num_heads[i_layer],
+                               window_size=window_size,
+                               mlp_ratio=self.mlp_ratio,
+                               qkv_bias=qkv_bias, qk_scale=qk_scale,
+                               drop=drop_rate, attn_drop=attn_drop_rate,
+                               drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],
+                               norm_layer=norm_layer,
+                               downsample=PatchMerging if (i_layer < self.num_layers - 1) else None))
+
+        self.norm = norm_layer()
+        self.avgpool = tfa.layers.AdaptiveAveragePooling1D(1)
+        self.head = TruncatedDense(num_classes) if num_classes > 0 else tf.identity
+
+    def forward_features(self, x):
+        x = self.patch_embed(x)
+        if self.ape:
+            x = x + self.absolute_pos_embed
+        x = self.pos_drop(x)
+
+        x = self.sequence(x)
+
+        x = self.norm(x)  # B L C
+        x = tf.transpose(self.avgpool(x), perm=(0,2,1))  # B C 1
+        x = tf.reshape(x, [x.shape[0], -1])
+        return x
+
+    def call(self, x):
+        x = self.forward_features(x)
+        x = self.head(x)
+        return x
+
+    def flops(self):
+        flops = 0
+        flops += self.patch_embed.flops()
+        for i, layer in enumerate(self.sequence):
+            flops += layer.flops()
+        flops += self.num_features * self.patches_resolution[0] * self.patches_resolution[1] // (2 ** self.num_layers)
+        flops += self.num_features * self.num_classes
         return flops
