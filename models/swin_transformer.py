@@ -175,8 +175,8 @@ class SwinTransformerBlock(Layer):
         drop (float, optional): Dropout rate. Default: 0.0
         attn_drop (float, optional): Attention dropout rate. Default: 0.0
         drop_path (float, optional): Stochastic depth rate. Default: 0.0
-        act_layer (nn.Module, optional): Activation layer. Default: nn.GELU
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+        act_layer (tf.keras.layers.Layer, optional): Activation layer. Default: tf.nn.gelu
+        norm_layer (tf.keras.layers.Layer, optional): Normalization layer.  Default: tf.keras.layers.LayerNormalization
     """
 
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,
@@ -291,7 +291,7 @@ class PatchMerging(Layer):
     Args:
         input_resolution (tuple[int]): Resolution of input feature.
         dim (int): Number of input channels.
-        norm_layer (nn.Module, optional): Normalization layer.  Default: nn.LayerNorm
+        norm_layer (tf.keras.layers.Layer, optional): Normalization layer.  Default: tf.keras.layers.LayerNormalization
     """
 
     def __init__(self, input_resolution, dim, norm_layer=LayerNormalization):
@@ -348,9 +348,8 @@ class BasicLayer(Layer):
         drop (float, optional): Dropout rate. Default: 0.0
         attn_drop (float, optional): Attention dropout rate. Default: 0.0
         drop_path (float | tuple[float], optional): Stochastic depth rate. Default: 0.0
-        norm_layer (nn.Module, optional): Normalization layer. Default: nn.LayerNorm
-        downsample (nn.Module | None, optional): Downsample layer at the end of the layer. Default: None
-        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False.
+        norm_layer (tf.keras.layers.Layer, optional): Normalization layer. Default: tf.keras.layers.LayerNormalization
+        downsample (tf.keras.layers.Layer | None, optional): Downsample layer at the end of the layer. Default: None
     """
 
     def __init__(self, dim, input_resolution, depth, num_heads, window_size,
@@ -406,7 +405,7 @@ class PatchEmbed(Layer):
         patch_size (int): Patch token size. Default: 4.
         in_chans (int): Number of input image channels. Default: 3.
         embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
+        norm_layer (tf.keras.layers.Layer, optional): Normalization layer. Default: None
     """
 
     def __init__(self, img_size=224, patch_size=4, in_chans=3, embed_dim=96, norm_layer=None):
@@ -465,10 +464,9 @@ class SwinTransformer(Model):
         drop_rate (float): Dropout rate. Default: 0
         attn_drop_rate (float): Attention dropout rate. Default: 0
         drop_path_rate (float): Stochastic depth rate. Default: 0.1
-        norm_layer (nn.Module): Normalization layer. Default: nn.LayerNorm.
+        norm_layer (tf.keras.layers.Layer): Normalization layer. Default: tf.keras.layers.LayerNormalization.
         ape (bool): If True, add absolute position embedding to the patch embedding. Default: False
         patch_norm (bool): If True, add normalization after patch embedding. Default: True
-        use_checkpoint (bool): Whether to use checkpointing to save memory. Default: False
     """
 
     def __init__(self, img_size=224, patch_size=4, in_chans=3, num_classes=1000,
