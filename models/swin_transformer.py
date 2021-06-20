@@ -6,7 +6,8 @@ from tensorflow.keras.layers import (
     Softmax,
     LayerNormalization,
     Conv2D,
-    Layer
+    Layer,
+    Activation
 )
 from tensorflow.keras import Model, Sequential
 
@@ -16,7 +17,7 @@ from models.utils import *
 
 
 class Mlp(Layer):
-    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=tf.nn.gelu, drop=0.):
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=Activation(tf.nn.gelu), drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
@@ -175,13 +176,13 @@ class SwinTransformerBlock(Layer):
         drop (float, optional): Dropout rate. Default: 0.0
         attn_drop (float, optional): Attention dropout rate. Default: 0.0
         drop_path (float, optional): Stochastic depth rate. Default: 0.0
-        act_layer (tf.keras.layers.Layer, optional): Activation layer. Default: tf.nn.gelu
+        act_layer (tf.keras.layers.Activation, optional): Activation layer. Default: tf.keras.layers.Activation(tf.nn.gelu)
         norm_layer (tf.keras.layers.Layer, optional): Normalization layer.  Default: tf.keras.layers.LayerNormalization
     """
 
     def __init__(self, dim, input_resolution, num_heads, window_size=7, shift_size=0,
                  mlp_ratio=4., qkv_bias=True, qk_scale=None, drop=0., attn_drop=0., drop_path=0.,
-                 act_layer=tf.nn.gelu, norm_layer=LayerNormalization):
+                 act_layer=Activation(tf.nn.gelu), norm_layer=LayerNormalization):
         super().__init__()
         self.dim = dim
         self.input_resolution = input_resolution
@@ -448,7 +449,7 @@ class PatchEmbed(Layer):
 
 class SwinTransformer(Model):
     r""" Swin Transformer
-        A PyTorch impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
+        A Tensorflow impl of : `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows`  -
           https://arxiv.org/pdf/2103.14030
     Args:
         img_size (int | tuple(int)): Input image size. Default 224
