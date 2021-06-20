@@ -22,3 +22,6 @@ if __name__ == "__main__":
 
     swin_transformer = build_model(config)
     swin_transformer(tf.zeros([1, 3, 224, 224]))
+    swin_transformer.load_weights('./tf_weights/swin_tiny_patch4_window7_224.tf')
+
+    print(swin_transformer(tf.zeros([1, 3, 224, 224])))

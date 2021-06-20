@@ -92,7 +92,7 @@ class WindowAttention(Layer):
         # define a parameter table of relative position bias
         initializer = tf.keras.initializers.TruncatedNormal(mean=0., stddev=.02)
         self.relative_position_bias_table = tf.Variable(
-            initializer(shape=(2*self.window_size[0]-1, 2*self.window_size[1]-1, num_heads)), trainable=True)  # 2*Wh-1 * 2*Ww-1, nH
+            initializer(shape=((2*self.window_size[0]-1) * (2*self.window_size[1]-1), num_heads)), name="relative_position_bias_table")  # 2*Wh-1 * 2*Ww-1, nH
 
         # get pair-wise relative position index for each token inside the window
         coords_h = tf.range(self.window_size[0])
@@ -124,7 +124,7 @@ class WindowAttention(Layer):
         q = q * self.scale
         attn = tf.einsum('...ij,...kj->...ik', q, k)
 
-        relative_position_bias = tf.reshape(tf.gather(tf.reshape(self.relative_position_bias_table, [-1, self.num_heads]), tf.reshape(self.relative_position_index, -1)),
+        relative_position_bias = tf.reshape(tf.gather(self.relative_position_bias_table, tf.reshape(self.relative_position_index, -1)),
             [self.window_size[0] * self.window_size[1], self.window_size[0] * self.window_size[1], -1])  # Wh*Ww,Wh*Ww,nH
         relative_position_bias = tf.transpose(relative_position_bias, perm=[2, 0, 1])  # nH, Wh*Ww, Wh*Ww
         attn = attn + relative_position_bias
@@ -195,13 +195,13 @@ class SwinTransformerBlock(Layer):
             self.window_size = min(self.input_resolution)
         assert 0 <= self.shift_size < self.window_size, "shift_size must in 0-window_size"
 
-        self.norm1 = norm_layer()
+        self.norm1 = norm_layer(epsilon=1e-5)
         self.attn = WindowAttention(
             dim, window_size=to_2tuple(self.window_size), num_heads=num_heads,
             qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
 
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else tf.identity #TODO: implement DropPath?
-        self.norm2 = norm_layer()
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else tf.identity
+        self.norm2 = norm_layer(epsilon=1e-5)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
@@ -256,7 +256,7 @@ class SwinTransformerBlock(Layer):
 
         # reverse cyclic shift
         if self.shift_size > 0:
-            x = tf.roll(x, shift=[self.shift_size, self.shift_size], axis=(1, 2))
+            x = tf.roll(shifted_x, shift=[self.shift_size, self.shift_size], axis=(1, 2))
         else:
             x = shifted_x
         x = tf.reshape(x, [B, H * W, C])
@@ -299,7 +299,7 @@ class PatchMerging(Layer):
         self.input_resolution = input_resolution
         self.dim = dim
         self.reduction = TruncatedDense(2 * dim, use_bias=False)
-        self.norm = norm_layer()
+        self.norm = norm_layer(epsilon=1e-5)
 
     def call(self, x):
         """
@@ -423,7 +423,8 @@ class PatchEmbed(Layer):
 
         self.proj = Conv2D(filters=embed_dim, kernel_size=patch_size, strides=patch_size, data_format="channels_first")
         if norm_layer is not None:
-            self.norm = norm_layer()
+            # TODO: Check impact of epsilon
+            self.norm = norm_layer(epsilon=1e-5)
         else:
             self.norm = None
 
@@ -496,7 +497,8 @@ class SwinTransformer(Model):
         # absolute position embedding
         if self.ape:
             initializer = tf.keras.initializers.TruncatedNormal(mean=0., stddev=.02)
-            self.absolute_pos_embed = tf.Variable(initializer(shape = (1, num_patches, embed_dim)), trainable=True)
+            # TODO: Check to make sure that this variable is supposed to not be trainable
+            self.absolute_pos_embed = tf.Variable(initializer(shape = (1, num_patches, embed_dim)), trainable=False)
 
         self.pos_drop = tf.keras.layers.Dropout(rate=drop_rate)
 
@@ -504,7 +506,7 @@ class SwinTransformer(Model):
         dpr = [x for x in np.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
 
         # build layers
-        self.sequence = Sequential()
+        self.sequence = Sequential(name="basic_layers_seq")
         for i_layer in range(self.num_layers):
             self.sequence.add(BasicLayer(dim=int(embed_dim * 2 ** i_layer),
                                input_resolution=(patches_resolution[0] // (2 ** i_layer),
@@ -519,7 +521,8 @@ class SwinTransformer(Model):
                                norm_layer=norm_layer,
                                downsample=PatchMerging if (i_layer < self.num_layers - 1) else None))
 
-        self.norm = norm_layer()
+        # TODO: Check impact of epsilon
+        self.norm = norm_layer(epsilon=1e-5)
         self.avgpool = tfa.layers.AdaptiveAveragePooling1D(1)
         self.head = TruncatedDense(num_classes) if num_classes > 0 else tf.identity
 
