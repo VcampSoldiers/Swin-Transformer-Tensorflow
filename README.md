@@ -42,22 +42,22 @@ from models.build import build_model
 swin_transformer = build_model(config='configs/swin_base_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
 ```
 
-The possible options for `model_name` and `weights_type` are:  
+The possible options for `config` and `weights_type` are:  
 
-| model_name | weights_type | 22K model | 1K Model |
+| config | weights_type | 22K model | 1K Model |
 | :---: | :---: | :---: | :---: |
-| swin_tiny_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_tiny_patch4_window7_224_1k.tar.gz) |
-| swin_small_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_small_patch4_window7_224_1k.tar.gz) |
-| swin_base_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_1k.tar.gz) |
-| swin_base_patch4_window12_384 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_1k.tar.gz) |
-| swin_base_patch4_window7_224 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22kto1k.tar.gz) |
-| swin_base_patch4_window12_384 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22kto1k.tar.gz) |
-| swin_large_patch4_window7_224 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22kto1k.tar.gz) |
-| swin_large_patch4_window12_384 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22kto1k.tar.gz) |
-| swin_base_patch4_window7_224 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22k.tar.gz) | - |
-| swin_base_patch4_window12_384 | imagenet_22k| [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22k.tar.gz) | - | 
-| swin_large_patch4_window7_224 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22k.tar.gz) | - | 
-| swin_large_patch4_window12_384 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22k.tar.gz) | - |
+| configs/swin_tiny_patch4_window7_224.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_tiny_patch4_window7_224_1k.tar.gz) |
+| configs/swin_small_patch4_window7_224.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_small_patch4_window7_224_1k.tar.gz) |
+| configs/swin_base_patch4_window7_224.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_1k.tar.gz) |
+| configs/swin_base_patch4_window12_384.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_1k.tar.gz) |
+| configs/swin_base_patch4_window7_224.yaml | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22kto1k.tar.gz) |
+| configs/swin_base_patch4_window12_384.yaml | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22kto1k.tar.gz) |
+| configs/swin_large_patch4_window7_224.yaml | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22kto1k.tar.gz) |
+| configs/swin_large_patch4_window12_384.yaml | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22kto1k.tar.gz) |
+| configs/swin_base_patch4_window7_224.yaml | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22k.tar.gz) | - |
+| configs/swin_base_patch4_window12_384.yaml | imagenet_22k| [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22k.tar.gz) | - | 
+| configs/swin_large_patch4_window7_224.yaml | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22k.tar.gz) | - | 
+| configs/swin_large_patch4_window12_384.yaml | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22k.tar.gz) | - |
 
 
 To create a custom classification model:
