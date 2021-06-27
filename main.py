@@ -1,6 +1,7 @@
 import tensorflow as tf
 
-from models.build import build_model
+from config import get_config_tiny, update_config_from_file
+from models.build import build_model, build_model_with_config
 
 if __name__ == "__main__":
     tf.debugging.set_log_device_placement(False)

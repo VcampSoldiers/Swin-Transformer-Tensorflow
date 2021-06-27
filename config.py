@@ -26,6 +26,23 @@ _C.DATA.IMG_SIZE = 224
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 
+
+def update_config_from_file(config, cfg_file):
+    config.defrost()
+    with open(cfg_file, 'r') as f:
+        yaml_cfg = yaml.load(f, Loader=yaml.FullLoader)
+
+    for cfg in yaml_cfg.setdefault('BASE', ['']):
+        if cfg:
+            _update_config_from_file(
+                config, os.path.join(os.path.dirname(cfg_file), cfg)
+            )
+    print('=> merge config from {}'.format(cfg_file))
+    config.merge_from_file(cfg_file)
+    config.freeze()
+    return config
+
+
 def get_config_tiny(include_top=True):
     config = _C.clone()
 

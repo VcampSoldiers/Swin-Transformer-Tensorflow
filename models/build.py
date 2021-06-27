@@ -62,11 +62,7 @@ def build_model(model_name, load_pretrained=True, include_top=True, weights_type
             os.remove(weights_tgz_path)
 
     return swin_transformer
-
-
-def build_custom_model(config_path):
-    pass
-
+    
 
 def build_model_with_config(config):
     model = SwinTransformer(img_size=config.DATA.IMG_SIZE,
