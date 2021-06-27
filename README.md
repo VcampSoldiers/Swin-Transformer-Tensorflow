@@ -17,57 +17,80 @@ ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by
 
 ## Usage:
 ### 1. Create a model with pretrained weights
+
+`Swin-T`:
+
 ```python
 from models.build import build_model
 
-swin_transformer = build_model(model_name='swin_tiny_patch4_window7_224', load_pretrained=True, include_top=True, weights_type='imagenet_1k')
+swin_transformer = build_model(config='configs/swin_tiny_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
 ```
+
+`Swin-S`:
+
+```python
+from models.build import build_model
+
+swin_transformer = build_model(config='configs/swin_small_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
+```
+
+`Swin-B`:
+
+```python
+from models.build import build_model
+
+swin_transformer = build_model(config='configs/swin_base_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
+```
+
 The possible options for `model_name` and `weights_type` are:  
 
-|model_name|weights_type|
-|----|----|
-|swin_tiny_patch4_window7_224|imagenet_1k|
-|swin_small_patch4_window7_224|imagenet_1k|
-|swin_base_patch4_window7_224|imagenet_1k|
-|swin_base_patch4_window12_384|imagenet_1k|
-|swin_base_patch4_window7_224|imagenet_22kto1k|
-|swin_base_patch4_window12_384|imagenet_22kto1k|
-|swin_large_patch4_window7_224|imagenet_22kto1k|
-|swin_large_patch4_window12_384|imagenet_22kto1k|
-|swin_base_patch4_window7_224|imagenet_22k|
-|swin_base_patch4_window12_384|imagenet_22k|
-|swin_large_patch4_window7_224|imagenet_22k|
-|swin_large_patch4_window12_384|imagenet_22k|
+| model_name | weights_type | 22K model | 1K Model |
+| :---: | :---: | :---: | :---: |
+| swin_tiny_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_tiny_patch4_window7_224_1k.tar.gz) |
+| swin_small_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_small_patch4_window7_224_1k.tar.gz) |
+| swin_base_patch4_window7_224 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_1k.tar.gz) |
+| swin_base_patch4_window12_384 | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_1k.tar.gz) |
+| swin_base_patch4_window7_224 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22kto1k.tar.gz) |
+| swin_base_patch4_window12_384 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22kto1k.tar.gz) |
+| swin_large_patch4_window7_224 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22kto1k.tar.gz) |
+| swin_large_patch4_window12_384 | imagenet_22kto1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22kto1k.tar.gz) |
+| swin_base_patch4_window7_224 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window7_224_22k.tar.gz) | - |
+| swin_base_patch4_window12_384 | imagenet_22k| [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_base_patch4_window12_384_22k.tar.gz) | - | 
+| swin_large_patch4_window7_224 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22k.tar.gz) | - | 
+| swin_large_patch4_window12_384 | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22k.tar.gz) | - |
 
-If you want to create your own classification model, try:
+
+To create a custom classification model:
 ```python
 import tensorflow as tf
 
+from config import get_config
 from models.build import build_model
 
+custom_config = get_config(CUSTOM_ARGS, include_top=False)
+
 swin_transformer = tf.keras.Sequential([
-    build_model(model_name='swin_tiny_patch4_window7_224', load_pretrained=True, include_top=False, weights_type='imagenet_1k'),
-    tf.keras.layers.Dense(NUM_CLASSES)
+    build_model(config=custom_config, load_pretrained=True, weights_type='imagenet_1k'),
+    tf.keras.layers.Dense(CUSTOM_NUM_CLASSES)
 )
 ```
 **Model ouputs are logits, so don't forget to include softmax in training/inference!!**
 
 ### 2. Load your own model configs
-You can easily overwrite model configs with a custom yaml file:
+You can easily overwrite model configs with a custom YAML file:
 ```python
-from config import get_config_tiny, update_config_from_file
-from models.build import build_model, build_model_with_config
+from config import get_config
+from models.build import build_model_with_config
 
-config = get_tiny_config()
-config = update_config_from_file(config, THE_PATH_TO_YAML_FILE)
+config = get_config(CUSTOM_YAML_FILE_PATH)
 swin = build_model_with_config(config)
 ```
-The example yaml file is provided in `./configs` directory.
+Predefined YAML files provided by Microsoft are located in the `configs` directory.
 
 ### 3. Convert PyTorch pretrained weights into Tensorflow checkpoints
 We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints.
 ```bash
-$ python3 load_weights.py --weights the_path_to_pytorch_weights --output the_path_to_output_tf_weights
+$ python3 convert_weights.py --cfg config_file --weights the_path_to_pytorch_weights --weights_type type_of_pretrained_weights --output the_path_to_output_tf_weights
 ```
 ## TODO:
 - [x] Translate model code over to TensorFlow

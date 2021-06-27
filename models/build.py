@@ -5,38 +5,40 @@ import glob
 
 import tensorflow as tf
 
-from config import get_config_tiny
 from models.swin_transformer import SwinTransformer
 
 
-def build_model(model_name, load_pretrained=True, include_top=True, weights_type='imagenet-1k'):
+def build_model(config, load_pretrained=True, weights_type='imagenet-1k'):
     """ Build a model of which config is pre-set
 
+    Downloads and loads pretrained weights from Github repository to load into Swin Transformer model
+    if load_pretrained is True.
+
     Args:
-        model_name: Predefined Swin Transformer model name.
-        load_pretrained: If True, load pretrained weights from official PyTorch Implementation
-        weights_type: Dataset used for pretraining. It should be one of 'imagenet_1k', 'imagenet_22k', 'imagenet_22kto1k'
+        config: Predefined Swin Transformer model configuration.
+        load_pretrained: If True, pretrained weights from official PyTorch Implementation are loaded into model
+        weights_type: Dataset used for pretraining. Should be one of the following: 'imagenet_1k', 'imagenet_22k', 'imagenet_22kto1k'
+    
+    Returns:
+        A TensorFlow Keras model fitting the configurations given in config and pretrained weights, depending
+        on whether or not load_pretrained is True or False.
     """
 
-    # build a model
-    if model_name == 'swin_tiny_224':
-        config = get_config_tiny(include_top)
-        swin_transformer = build_model_with_config(config)
-    else:
-        raise NotImplementedError(f'Model {model_name} is either not supported or not implemented yet.')
+    # Build model
+    swin_transformer = build_model_with_config(config)
 
     if not load_pretrained:
         return swin_transformer
 
-    # pretrained weights download link
-    weights_link = f"https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/{model_name}_{weights_type[9:]}.tar.gz"
+    # Prepare pretrained weights to download
+    weights_link = f"https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/{config.MODEL.NAME}_{weights_type[9:]}.tar.gz"
 
-    # paths for pretrained weights
+    # Designate path for pretrained weights
     weights_folder = './weights'
-    weights_dir_path = f'{weights_folder}/{model_name}_{weights_type}'
+    weights_dir_path = f'{weights_folder}/{config.MODEL.NAME}_{weights_type}'
     weights_tgz_path = weights_dir_path + '.tar.gz'
 
-    # download pretrained weights and load it into model
+    # Download pretrained weights and load them into the model
     try:
         if os.path.exists(weights_dir_path):
             print('Pretrained weights file already exists. Skipping download...')
@@ -50,11 +52,11 @@ def build_model(model_name, load_pretrained=True, include_top=True, weights_type
             tar.extractall(weights_dir_path)
         ckpt_filename = glob.glob(os.path.join(weights_dir_path, '*.ckpt.data-00000-of-00001'))[0].split('/')[-1].split('.')[0]
     except Exception as e:
-        print(f'There is no matching pretrained weights for model: {model_name}, dataset: {weights_type}')
+        print(f'There is no matching pretrained weights for model: {config.MODEL.NAME}, dataset: {weights_type}')
         print('Skipping pretrained weights load...')
     else:
-        input_shape = (1, 3, config.DATA.IMG_SIZE, config.DATA.IMG_SIZE)
-        # compile a model to load weights
+        input_shape = (1, config.MODEL.SWIN.IN_CHANS, config.DATA.IMG_SIZE, config.DATA.IMG_SIZE)
+        # Compile a model to load weights
         swin_transformer(tf.zeros(input_shape), training=False)
         swin_transformer.load_weights(os.path.join(weights_dir_path, ckpt_filename+'.ckpt'))
     finally:
