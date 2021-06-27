@@ -34,7 +34,7 @@ Possible options for `model_name` and `weights_type` are:
 |swin_large_224|imagenet-22k|
 |swin_large_384|imagenet-22k|
 
-If want to create your own classification model, try:
+If you want to create your own classification model, try:
 ```python
 import tensorflow as tf
 
