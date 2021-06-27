@@ -20,19 +20,24 @@ ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by
 ```python
 from models.build import build_model
 
-swin_transformer = build_model(model_name='swin_tiny_224', load_pretrained=True, include_top=True, weights_type='imagenet-1k')
+swin_transformer = build_model(model_name='swin_tiny_patch4_window7_224', load_pretrained=True, include_top=True, weights_type='imagenet_1k')
 ```
-Possible options for `model_name` and `weights_type` are:  
+The possible options for `model_name` and `weights_type` are:  
+
 |model_name|weights_type|
 |----|----|
-|swin_tiny_224|imagenet-1k|
-|swin_small_224|imagenet-1k|
-|swin_base_224|imagenet-1k|
-|swin_base_384|imagenet-1k|
-|swin_base_224|imagenet-22k|
-|swin_base_384|imagenet-22k|
-|swin_large_224|imagenet-22k|
-|swin_large_384|imagenet-22k|
+|swin_tiny_patch4_window7_224|imagenet_1k|
+|swin_small_patch4_window7_224|imagenet_1k|
+|swin_base_patch4_window7_224|imagenet_1k|
+|swin_base_patch4_window12_384|imagenet_1k|
+|swin_base_patch4_window7_224|imagenet_22kto1k|
+|swin_base_patch4_window12_384|imagenet_22kto1k|
+|swin_large_patch4_window7_224|imagenet_22kto1k|
+|swin_large_patch4_window12_384|imagenet_22kto1k|
+|swin_base_patch4_window7_224|imagenet_22k|
+|swin_base_patch4_window12_384|imagenet_22k|
+|swin_large_patch4_window7_224|imagenet_22k|
+|swin_large_patch4_window12_384|imagenet_22k|
 
 If you want to create your own classification model, try:
 ```python
@@ -41,7 +46,7 @@ import tensorflow as tf
 from models.build import build_model
 
 swin_transformer = tf.keras.Sequential([
-    build_model(model_name='swin_tiny_224', load_pretrained=True, include_top=False, weights_type='imagenet-1k'),
+    build_model(model_name='swin_tiny_patch4_window7_224', load_pretrained=True, include_top=False, weights_type='imagenet_1k'),
     tf.keras.layers.Dense(NUM_CLASSES)
 )
 ```

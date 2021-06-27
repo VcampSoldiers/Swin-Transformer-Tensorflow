@@ -15,7 +15,7 @@ def build_model(model_name, load_pretrained=True, include_top=True, weights_type
     Args:
         model_name: Predefined Swin Transformer model name.
         load_pretrained: If True, load pretrained weights from official PyTorch Implementation
-        weights_type: Dataset used for pretraining. It should be either 'imagenet-1k' or 'imagenet-22k'
+        weights_type: Dataset used for pretraining. It should be one of 'imagenet_1k', 'imagenet_22k', 'imagenet_22kto1k'
     """
 
     # build a model
@@ -29,7 +29,7 @@ def build_model(model_name, load_pretrained=True, include_top=True, weights_type
         return swin_transformer
 
     # pretrained weights download link
-    weights_link = f"https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/{model_name}_{weights_type}.tar.gz"
+    weights_link = f"https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/{model_name}_{weights_type[9:]}.tar.gz"
 
     # paths for pretrained weights
     weights_folder = './weights'
@@ -62,7 +62,7 @@ def build_model(model_name, load_pretrained=True, include_top=True, weights_type
             os.remove(weights_tgz_path)
 
     return swin_transformer
-    
+
 
 def build_model_with_config(config):
     model = SwinTransformer(img_size=config.DATA.IMG_SIZE,
