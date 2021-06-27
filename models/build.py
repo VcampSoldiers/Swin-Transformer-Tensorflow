@@ -31,11 +31,13 @@ def build_model(model_name, load_pretrained=True, weights_type='imagenet-1k'):
     # pretrained weights download link
     weights_link = f"https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/{model_name}_{weights_type}.tar.gz"
 
+    # paths for pretrained weights
+    weights_folder = './weights'
+    weights_dir_path = f'{weights_folder}/{model_name}_{weights_type}'
+    weights_tgz_path = weights_dir_path + '.tar.gz'
+
     # download pretrained weights and load it into model
     try:
-        weights_folder = './weights'
-        weights_dir_path = f'{weights_folder}/{model_name}_{weights_type}'
-        weights_tgz_path = weights_dir_path + '.tar.gz'
         if os.path.exists(weights_dir_path):
             print('Pretrained weights file already exists. Skipping download...')
         else:
