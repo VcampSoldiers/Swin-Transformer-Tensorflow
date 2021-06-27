@@ -26,7 +26,7 @@ _C.DATA.IMG_SIZE = 224
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 
-def get_config_tiny():
+def get_config_tiny(include_top=True):
     config = _C.clone()
 
     config.defrost()
@@ -35,7 +35,7 @@ def get_config_tiny():
     # Model name
     config.MODEL.NAME = 'swin_tiny_patch4_window7_224'
     # Number of classes, overwritten in data preparation
-    config.MODEL.NUM_CLASSES = 1000
+    config.MODEL.NUM_CLASSES = 1000 if include_top else 0
     # Dropout rate
     config.MODEL.DROP_RATE = 0.0
     # Drop path rate

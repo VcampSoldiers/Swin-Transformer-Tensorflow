@@ -9,7 +9,7 @@ from config import get_config_tiny
 from models.swin_transformer import SwinTransformer
 
 
-def build_model(model_name, load_pretrained=True, weights_type='imagenet-1k'):
+def build_model(model_name, load_pretrained=True, include_top=True, weights_type='imagenet-1k'):
     """ Build a model of which config is pre-set
 
     Args:
@@ -20,7 +20,7 @@ def build_model(model_name, load_pretrained=True, weights_type='imagenet-1k'):
 
     # build a model
     if model_name == 'swin_tiny_224':
-        config = get_config_tiny()
+        config = get_config_tiny(include_top)
         swin_transformer = build_model_with_config(config)
     else:
         raise NotImplementedError(f'Model {model_name} is either not supported or not implemented yet.')
