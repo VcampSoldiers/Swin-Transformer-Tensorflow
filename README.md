@@ -48,19 +48,19 @@ swin_transformer = tf.keras.Sequential([
 **Model ouputs are logits, so don't forget to include softmax in training/inference!!**
 
 ### 2. Load your own model configs
-You can easily overwrite model configs with custom yaml file:
+You can easily overwrite model configs with a custom yaml file:
 ```python
 from config import get_config_tiny, update_config_from_file
 from models.build import build_model, build_model_with_config
 
 config = get_tiny_config()
-config = update_config_from_file(config, PATH_TO_YAML_FILE)
+config = update_config_from_file(config, THE_PATH_TO_YAML_FILE)
 swin = build_model_with_config(config)
 ```
 The example yaml file is provided in `./configs` directory.
 
 ### 3. Convert PyTorch pretrained weights into Tensorflow checkpoints
-We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints:
+We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints.
 ```bash
 $ python3 load_weights.py --weights the_path_to_pytorch_weights --output the_path_to_output_tf_weights
 ```
