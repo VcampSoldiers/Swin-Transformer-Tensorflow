@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-from config import get_config_tiny
 from models.build import build_model
 
 if __name__ == "__main__":
@@ -18,10 +17,5 @@ if __name__ == "__main__":
             # Memory growth must be set before GPUs have been initialized
             print(e)
 
-    config = get_config_tiny()
-
-    swin_transformer = build_model(config)
-    swin_transformer(tf.zeros([1, 3, 224, 224]))
-    swin_transformer.load_weights('./tf_weights/swin_tiny_patch4_window7_224.tf')
-
+    swin_transformer = build_model('swin_tiny_224')
     print(swin_transformer(tf.zeros([1, 3, 224, 224])))

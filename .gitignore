@@ -155,3 +155,6 @@ Thumbs.db
 
 # vscode configuration
 .vscode
+
+# pretrained weights
+weights

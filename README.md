@@ -17,6 +17,7 @@ ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by
 
 ## TODO:
 - [x] Translate model code over to TensorFlow
+- [x] Load PyTorch pretrained weights into TensorFlow model
 - [ ] Write trainer code
 - [ ] Reproduce results presented in paper
     - [ ] Object Detection

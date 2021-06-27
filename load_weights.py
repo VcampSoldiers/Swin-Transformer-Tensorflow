@@ -4,7 +4,7 @@ import torch
 import tensorflow as tf
 
 from config import get_config_tiny
-from models.build import build_model
+from models.build import build_model, build_model_with_config
 
 
 def parse_option():
@@ -32,7 +32,7 @@ def parse_option():
 def main(config):
     model_config = get_config_tiny()
 
-    swin_transformer = build_model(model_config)
+    swin_transformer = build_model_with_config(model_config)
     swin_transformer(tf.zeros([1, 3, 224, 224]))
     print('Model created')
 
