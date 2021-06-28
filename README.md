@@ -16,30 +16,24 @@ ADE20K semantic segmentation (`53.5 mIoU` on val), surpassing previous models by
 
 
 ## Usage:
-### 1. Create a model with pretrained weights
+### 1. To Run a Pre-trained Swin Transformer
 
 `Swin-T`:
 
-```python
-from models.build import build_model
-
-swin_transformer = build_model(config='configs/swin_tiny_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
+```bash
+python main.py --cfg configs/swin_tiny_patch4_window7_224.yaml --include_top 1 --resume 1 --weights_type imagenet_1k
 ```
 
 `Swin-S`:
 
-```python
-from models.build import build_model
-
-swin_transformer = build_model(config='configs/swin_small_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
+```bash
+python main.py --cfg configs/swin_small_patch4_window7_224.yaml --include_top 1 --resume 1 --weights_type imagenet_1k
 ```
 
 `Swin-B`:
 
-```python
-from models.build import build_model
-
-swin_transformer = build_model(config='configs/swin_base_patch4_window7_224.yaml', load_pretrained=True, weights_type='imagenet_1k')
+```bash
+python main.py --cfg configs/swin_base_patch4_window7_224.yaml --include_top 1 --resume 1 --weights_type imagenet_1k
 ```
 
 The possible options for `config` and `weights_type` are:  
@@ -59,33 +53,52 @@ The possible options for `config` and `weights_type` are:
 | configs/swin_large_patch4_window7_224.yaml | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window7_224_22k.tar.gz) | - | 
 | configs/swin_large_patch4_window12_384.yaml | imagenet_22k | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_large_patch4_window12_384_22k.tar.gz) | - |
 
+### 2. Create custom models
 
 To create a custom classification model:
 ```python
+import argparse
+
 import tensorflow as tf
 
 from config import get_config
 from models.build import build_model
 
-custom_config = get_config(CUSTOM_ARGS, include_top=False)
+parser = argparse.ArgumentParser('Custom Swin Transformer')
+
+parser.add_argument(
+    '--cfg',
+    type=str,
+    metavar="FILE",
+    help='path to config file',
+    default="CUSTOM_YAML_FILE_PATH"
+)
+parser.add_argument(
+    '--resume',
+    type=int,
+    help='Whether or not to resume training from pretrained weights',
+    choices={0, 1},
+    default=1,
+)
+parser.add_argument(
+    '--weights_type',
+    type=str,
+    help='Type of pretrained weight file to load including number of classes',
+    choices={"imagenet_1k", "imagenet_22k", "imagenet_22kto1k"},
+    default="imagenet_1k",
+)
+
+args = parser.parse_args()
+custom_config = get_config(args, include_top=False)
 
 swin_transformer = tf.keras.Sequential([
-    build_model(config=custom_config, load_pretrained=True, weights_type='imagenet_1k'),
+    build_model(config=custom_config, load_pretrained=args.resume, weights_type=args.weights_type),
     tf.keras.layers.Dense(CUSTOM_NUM_CLASSES)
 )
 ```
 **Model ouputs are logits, so don't forget to include softmax in training/inference!!**
 
-### 2. Load your own model configs
-You can easily overwrite model configs with a custom YAML file:
-```python
-from config import get_config
-from models.build import build_model_with_config
-
-config = get_config(CUSTOM_YAML_FILE_PATH)
-swin = build_model_with_config(config)
-```
-Predefined YAML files provided by Microsoft are located in the `configs` directory.
+You can easily use customize the model configs with custom YAML files. Predefined YAML files provided by Microsoft are located in the `configs` directory.
 
 ### 3. Convert PyTorch pretrained weights into Tensorflow checkpoints
 We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints.
