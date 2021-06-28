@@ -98,7 +98,7 @@ swin_transformer = tf.keras.Sequential([
 ```
 **Model ouputs are logits, so don't forget to include softmax in training/inference!!**
 
-You can easily use customize the model configs with custom YAML files. Predefined YAML files provided by Microsoft are located in the `configs` directory.
+You can easily customize the model configs with custom YAML files. Predefined YAML files provided by Microsoft are located in the `configs` directory.
 
 ### 3. Convert PyTorch pretrained weights into Tensorflow checkpoints
 We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints.
