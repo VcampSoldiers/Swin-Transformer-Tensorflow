@@ -36,9 +36,9 @@ python main.py --cfg configs/swin_small_patch4_window7_224.yaml --include_top 1 
 python main.py --cfg configs/swin_base_patch4_window7_224.yaml --include_top 1 --resume 1 --weights_type imagenet_1k
 ```
 
-The possible options for `config` and `weights_type` are:  
+The possible options for `cfg` and `weights_type` are:  
 
-| config | weights_type | 22K model | 1K Model |
+| cfg | weights_type | 22K model | 1K Model |
 | :---: | :---: | :---: | :---: |
 | configs/swin_tiny_patch4_window7_224.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_tiny_patch4_window7_224_1k.tar.gz) |
 | configs/swin_small_patch4_window7_224.yaml | imagenet_1k | - | [github](https://github.com/VcampSoldiers/Swin-Transformer-Tensorflow/releases/download/v1.0/swin_small_patch4_window7_224_1k.tar.gz) |
@@ -103,7 +103,7 @@ You can easily use customize the model configs with custom YAML files. Predefine
 ### 3. Convert PyTorch pretrained weights into Tensorflow checkpoints
 We provide a python script with which we convert official PyTorch weights into Tensorflow checkpoints.
 ```bash
-$ python3 convert_weights.py --cfg config_file --weights the_path_to_pytorch_weights --weights_type type_of_pretrained_weights --output the_path_to_output_tf_weights
+$ python convert_weights.py --cfg config_file --weights the_path_to_pytorch_weights --weights_type type_of_pretrained_weights --output the_path_to_output_tf_weights
 ```
 ## TODO:
 - [x] Translate model code over to TensorFlow
